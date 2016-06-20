@@ -1,20 +1,18 @@
 # ExMastercard
 
-**TODO: Add description**
+Mastercard exchange rates fetcher
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed as:
+```elixir
+   def deps do
+      [{:ex_mastercard, git: "git://github.com/aluuu/ex_mastercard.git", branch: "master"}]
+   end
+```
 
-  1. Add ex_mastercard to your list of dependencies in `mix.exs`:
+## Usage
 
-        def deps do
-          [{:ex_mastercard, "~> 0.0.1"}]
-        end
-
-  2. Ensure ex_mastercard is started before your application:
-
-        def application do
-          [applications: [:ex_mastercard]]
-        end
-
+```elixir
+ExMastercard.fetch_last_rates("RUB")
+ExMastercard.fetch_last_rate({"RUB", "USD"})
+```
