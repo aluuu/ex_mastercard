@@ -15,7 +15,7 @@ defmodule ExMastercard.Mixfile do
   end
 
   def application do
-    [applications: [:logger, :httpoison]]
+    [applications: [:logger, :httpoison, :exml]]
   end
 
   defp deps do
