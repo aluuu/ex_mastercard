@@ -3,18 +3,13 @@ defmodule ExMastercardTest do
   alias Decimal, as: D
   doctest ExMastercard
 
-  test "fetches latest rates" do
-    {_date, rates} = ExMastercard.fetch_last_rates("RUB")
-    assert Map.size(rates) > 0
-  end
-
-  test "fetches latest single rate" do
-    {_date, rate} = ExMastercard.fetch_last_rate({"RUB", "USD"})
+  test "fetches single rate for specific date" do
+    {_date, rate} = ExMastercard.fetch_rate("RUB", "USD", "2016-10-19")
     assert not D.equal?(D.new(0), rate)
   end
 
-  test "returns nil if there's no rates for given date" do
-    {_date, rates} = ExMastercard.fetch_rates("RUB", "09/12/2999")
-    assert rates == nil
+  test "fetches nil if rate for specific date is unavailable" do
+    {_date, rate} = ExMastercard.fetch_rate("RUB", "USD", "2016-10-01")
+    assert is_nil(rate)
   end
 end

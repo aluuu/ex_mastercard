@@ -1,7 +1,7 @@
 defmodule ExMastercard do
   use HTTPoison.Base
 
-  @endpoint "https://www.mastercard.com/psder/eu/callPsder.do"
+  @endpoint "https://www.mastercard.us/settlement/currencyrate/"
 
   @type date :: binary
   @type currency_code :: binary
@@ -11,65 +11,38 @@ defmodule ExMastercard do
 
   @type response :: {integer, any} | any
 
-  @spec fetch_last_rate(currency_code_pair) :: {date, rate}
-  def fetch_last_rate(codes = {source_code, destination_code}) do
-    case fetch_rates(source_code, nil) do
-      {rates_date, nil} -> {rates_date, fetch_rate(codes, rates_date)}
-      {rates_date, rates} -> {rates_date, rates |> Map.get(destination_code)}
-    end
-  end
+  @spec fetch_rate(currency_code, currency_code, date) :: rate | nil
+  def fetch_rate(source_code, destination_code, date) do
+    params =  build_params(source_code, destination_code, date)
 
-  @spec fetch_last_rate(currency_code) :: {date, rates}
-  def fetch_last_rates(currency_code) do
-    case fetch_rates(currency_code, nil) do
-      {rates_date, nil} -> fetch_rates(currency_code, rates_date)
-      r -> r
-    end
-  end
+    url = @endpoint <> params
 
-  @spec fetch_rate(currency_code_pair, date) :: rate
-  def fetch_rate({source_code, destination_code}, date) do
-    case fetch_rates(source_code, date) do
-      {_, nil} -> nil
-      {_, rates} -> rates |> Map.get(destination_code)
-    end
-  end
+    response =
+      get!(url, [], timeout: 60_000, recv_timeout: 60_000)
+      |> process_response
 
-  @spec fetch_rates(currency_code, date) :: rate | nil
-  def fetch_rates(currency_code, date) do
-    data =  build_request(currency_code, date)
-
-    response = request!(:post, @endpoint, data, [],
-                        timeout: 60_000,
-                        recv_timeout: 60_000)
-    response = response |> process_response
-
-    currencies = Exml.get response, "//ALPHA_CURENCY_CODE"
-    rates = Exml.get(response, "//CONVERSION_RATE")
-    rates_date = Exml.get(response, "//SETTLEMENT_DATE")
-
-    case {currencies, rates} do
-      {nil, nil} -> {rates_date, nil}
-      {_, _} ->
-        rates = rates |> Enum.map(&(Decimal.new &1))
-        {rates_date, Enum.zip(currencies, rates) |> Map.new}
-    end
-  end
-
-  defp build_request(currency_code, date) do
-    data =
-      case date do
-        nil -> [service: "loadInitialValues"]
-        _ -> [baseCurrency: currency_code,
-             settlementDate: date,
-             service: "getExchngRateDetails"]
+    rate =
+      case response["type"] do
+        nil ->
+          response |> Map.get("data") |> Map.get("conversionRate") |> Decimal.new
+        _ -> nil
       end
-    {:form, data}
+    {date, rate}
+  end
+
+  defp build_params(source_code, destination_code, date) do
+    date =
+      case date do
+        nil -> DateTime.utc_now |> DateTime.to_date |> Date.to_iso8601
+        _ -> date
+      end
+
+    "fxDate=#{date};transCurr=#{source_code};crdhldBillCurr=#{destination_code};bankFee=0.00;transAmt=1.00/conversion-rate"
   end
 
   @spec process_response(HTTPoison.Response.t) :: response
   def process_response(%HTTPoison.Response{status_code: 200, body: body}) do
-    Exml.parse body
+    Poison.Parser.parse! body
   end
 
   def process_response(%HTTPoison.Response{status_code: status_code, body: body }) do

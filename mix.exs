@@ -15,12 +15,12 @@ defmodule ExMastercard.Mixfile do
   end
 
   def application do
-    [applications: [:logger, :httpoison, :exml]]
+    [applications: [:logger, :httpoison, :poison]]
   end
 
   defp deps do
     [{:httpoison, "~> 0.8"},
-     {:exml, "~> 0.1"},
+     {:poison, "~> 3.0"},
      {:decimal, "~> 1.1"}]
   end
 end
