@@ -20,7 +20,7 @@ defmodule ExMastercard.Mixfile do
 
   defp deps do
     [{:httpoison, "~> 0.8"},
-     {:poison, "~> 3.0"},
+     {:poison, "~> 2.0"},
      {:decimal, "~> 1.1"}]
   end
 end
